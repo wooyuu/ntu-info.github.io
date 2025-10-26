@@ -283,7 +283,7 @@
             <input 
               type="text" 
               x-model="lookupTermInput"
-              @keyup.enter="lookupTerm(lookupTermInput)"
+              @input.debounce.700ms="lookupTerm(lookupTermInput)"
               placeholder="輸入 term (例如: amygdala)"
               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
             
@@ -302,18 +302,20 @@
             <span x-text="error"></span>
           </div>
           
-          <!-- Loading Skeleton for Lookup -->
+          <!-- Loading Skeleton -->
           <div x-show="loading && activeTab === 'lookup'" class="space-y-3">
             <div class="skeleton h-8 w-48 rounded"></div>
             <div class="skeleton h-64 rounded-lg"></div>
           </div>
           
-          <div x-show="lookupResult && !loading" class="space-y-4">
-            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <h3 class="font-bold text-lg text-purple-800 mb-2">查詢結果</h3>
-              <pre class="bg-white p-4 rounded border border-purple-200 overflow-x-auto text-sm" x-text="JSON.stringify(lookupResult, null, 2)"></pre>
+          <template x-if="lookupTermInput && lookupResult && !loading">
+            <div class="space-y-4">
+              <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 class="font-bold text-lg text-purple-800 mb-2">查詢結果</h3>
+                <pre class="bg-white p-4 rounded border border-purple-200 overflow-x-auto text-sm" x-text="JSON.stringify(lookupResult, null, 2)"></pre>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
       </div>
 
@@ -328,9 +330,9 @@
           <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <h4 class="font-bold text-blue-800 mb-2">💡 查詢語法說明</h4>
             <ul class="text-sm text-blue-700 space-y-1">
-              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not</code> 來排除 term</li>
+              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not, or, and</code> 來篩選 term</li>
               <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala not emotion</code></li>
-              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">memory not hippocampus</code></li>
+              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">memory and hippocampus</code></li>
             </ul>
           </div>
           
@@ -338,7 +340,7 @@
             <input 
               type="text" 
               x-model="queryInput"
-              @keyup.enter="searchQuery(queryInput)"
+              @input.debounce.700ms="searchQuery(queryInput)" 
               placeholder="輸入查詢語句 (例如: amygdala not emotion)"
               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
             
@@ -351,29 +353,30 @@
             </button>
           </div>
           
-          <!-- Results -->
           <div x-show="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
             <i class="fas fa-exclamation-triangle mr-2"></i>
             <span x-text="error"></span>
           </div>
           
-          <!-- Loading Skeleton for Query -->
           <div x-show="loading && activeTab === 'query'" class="space-y-3">
             <div class="skeleton h-8 w-64 rounded"></div>
             <div class="skeleton h-96 rounded-lg"></div>
           </div>
           
-          <div x-show="queryResult && !loading" class="space-y-4">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 class="font-bold text-lg text-green-800 mb-2">搜尋結果</h3>
-              <p class="text-sm text-gray-600 mb-2">
-                查詢: <code class="bg-white px-2 py-1 rounded" x-text="queryInput"></code>
-              </p>
-              <pre class="bg-white p-4 rounded border border-green-200 overflow-x-auto text-sm max-h-96" x-text="JSON.stringify(queryResult, null, 2)"></pre>
+          <template x-if="queryInput && queryResult && !loading">
+            <div class="space-y-4">
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 class="font-bold text-lg text-green-800 mb-2">搜尋結果</h3>
+                <p class="text-sm text-gray-600 mb-2">
+                  查詢: <code class="bg-white px-2 py-1 rounded" x-text="queryInput"></code>
+                </p>
+                <pre class="bg-white p-4 rounded border border-green-200 overflow-x-auto text-sm max-h-96" x-text="JSON.stringify(queryResult, null, 2)"></pre>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
       </div>
+
       
     </div>
   </main>
