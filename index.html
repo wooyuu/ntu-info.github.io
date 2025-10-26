@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neurosynth Term Explorer</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Alpine.js for reactivity -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    [x-cloak] { display: none !important; }
+    
+    .gradient-bg {
+      background: linear-gradient(135deg, #274046 0%, #E6DADA 100%);
+    }
+    
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    
+    .pulse-slow {
+      animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.3s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="neurosynthApp()">
+  
+  <!-- Header -->
+  <header class="gradient-bg text-white shadow-lg">
+    <div class="container mx-auto px-4 py-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-brain text-4xl"></i>
+          <div>
+            <h1 class="text-3xl font-bold">Neurosynth Explorer</h1>
+            <p class="text-blue-100 text-sm">探索神經科學文獻資料庫</p>
+          </div>
+        </div>
+        <div class="text-right text-sm">
+          <p>API: <code class="bg-white/20 px-2 py-1 rounded">mil.psy.ntu.edu.tw:5000</code></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    
+    <!-- Tab Navigation -->
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+      <div class="flex border-b">
+        <button 
+          @click="activeTab = 'terms'"
+          :class="activeTab === 'terms' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+          class="flex-1 py-4 px-6 font-semibold transition-colors duration-200 flex items-center justify-center space-x-2">
+          <i class="fas fa-list"></i>
+          <span>所有 Terms</span>
+        </button>
+        
+        <button 
+          @click="activeTab = 'lookup'"
+          :class="activeTab === 'lookup' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+          class="flex-1 py-4 px-6 font-semibold transition-colors duration-200 flex items-center justify-center space-x-2">
+          <i class="fas fa-search"></i>
+          <span>Term 查詢</span>
+        </button>
+        
+        <button 
+          @click="activeTab = 'query'"
+          :class="activeTab === 'query' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+          class="flex-1 py-4 px-6 font-semibold transition-colors duration-200 flex items-center justify-center space-x-2">
+          <i class="fas fa-project-diagram"></i>
+          <span>邏輯搜尋</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="space-y-6">
+      
+      <!-- Tab 1: All Terms -->
+      <div x-show="activeTab === 'terms'" x-cloak class="slide-in">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-database mr-2 text-purple-600"></i>
+              所有可用的 Terms
+            </h2>
+            <button 
+              @click="fetchAllTerms()" 
+              :disabled="loading"
+              class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+              <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-sync'"></i>
+              <span x-text="loading ? '載入中...' : '重新載入'"></span>
+            </button>
+          </div>
+          
+          <!-- Search Filter -->
+          <div class="mb-4">
+            <input 
+              type="text" 
+              x-model="termFilter"
+              placeholder="🔍 搜尋 term..."
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+          </div>
+          
+          <!-- Results -->
+          <div x-show="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span x-text="error"></span>
+          </div>
+          
+          <div x-show="allTerms.length > 0" class="space-y-2">
+            <p class="text-gray-600 mb-2">
+              找到 <span class="font-bold text-purple-600" x-text="filteredTerms.length"></span> 個 terms
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+              <template x-for="term in filteredTerms" :key="term">
+                <button
+                  @click="lookupTerm(term)"
+                  class="text-left px-4 py-3 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg transition-all duration-200 card-hover">
+                  <i class="fas fa-tag text-purple-600 mr-2"></i>
+                  <span class="text-gray-800 font-medium" x-text="term"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+          
+          <div x-show="!loading && allTerms.length === 0" class="text-center py-12 text-gray-500">
+            <i class="fas fa-inbox text-6xl mb-4"></i>
+            <p>點擊「重新載入」來取得資料</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Term Lookup -->
+      <div x-show="activeTab === 'lookup'" x-cloak class="slide-in">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-search mr-2 text-purple-600"></i>
+            查詢特定 Term
+          </h2>
+          
+          <div class="flex space-x-2 mb-6">
+            <input 
+              type="text" 
+              x-model="lookupTermInput"
+              @keyup.enter="lookupTerm(lookupTermInput)"
+              placeholder="輸入 term (例如: amygdala)"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+            
+            <button 
+              @click="lookupTerm(lookupTermInput)"
+              :disabled="loading || !lookupTermInput"
+              class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+              <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+              <span>查詢</span>
+            </button>
+          </div>
+          
+          <!-- Results -->
+          <div x-show="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span x-text="error"></span>
+          </div>
+          
+          <div x-show="lookupResult" class="space-y-4">
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <h3 class="font-bold text-lg text-purple-800 mb-2">查詢結果</h3>
+              <pre class="bg-white p-4 rounded border border-purple-200 overflow-x-auto text-sm" x-text="JSON.stringify(lookupResult, null, 2)"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Query Search -->
+      <div x-show="activeTab === 'query'" x-cloak class="slide-in">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-project-diagram mr-2 text-purple-600"></i>
+            邏輯搜尋 Studies
+          </h2>
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 class="font-bold text-blue-800 mb-2">💡 查詢語法說明</h4>
+            <ul class="text-sm text-blue-700 space-y-1">
+              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not, or, and</code> 來排除 term</li>
+              <li>• eg: <code class="bg-white px-2 py-0.5 rounded">amygdala not emotion</code></li>
+              <li>• eg: <code class="bg-white px-2 py-0.5 rounded">memory and hippocampus</code></li>
+            </ul>
+          </div>
+          
+          <div class="flex space-x-2 mb-6">
+            <input 
+              type="text" 
+              x-model="queryInput"
+              @keyup.enter="searchQuery(queryInput)"
+              placeholder="輸入查詢語句 (例如: amygdala not emotion)"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+            
+            <button 
+              @click="searchQuery(queryInput)"
+              :disabled="loading || !queryInput"
+              class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+              <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+              <span>搜尋</span>
+            </button>
+          </div>
+          
+          <!-- Results -->
+          <div x-show="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span x-text="error"></span>
+          </div>
+          
+          <div x-show="queryResult" class="space-y-4">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 class="font-bold text-lg text-green-800 mb-2">搜尋結果</h3>
+              <p class="text-sm text-gray-600 mb-2">
+                查詢: <code class="bg-white px-2 py-1 rounded" x-text="queryInput"></code>
+              </p>
+              <pre class="bg-white p-4 rounded border border-green-200 overflow-x-auto text-sm max-h-96" x-text="JSON.stringify(queryResult, null, 2)"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white mt-12 py-6">
+    <div class="container mx-auto px-4 text-center">
+      <p class="text-gray-400">
+        <i class="fas fa-code mr-2"></i>
+        Built with Tailwind CSS + Alpine.js | Data from Neurosynth API
+      </p>
+      <p class="text-gray-500 text-sm mt-2">
+        NTU | 2025
+      </p>
+    </div>
+  </footer>
+
+  <!-- Alpine.js App Logic -->
+  <script>
+    function neurosynthApp() {
+      return {
+        // API Base URL
+        apiBase: 'https://mil.psy.ntu.edu.tw:5000',
+        
+        // State
+        activeTab: 'terms',
+        loading: false,
+        error: null,
+        
+        // Data
+        allTerms: [],
+        termFilter: '',
+        lookupTermInput: '',
+        lookupResult: null,
+        queryInput: '',
+        queryResult: null,
+        
+        // Computed
+        get filteredTerms() {
+          if (!this.termFilter) return this.allTerms;
+          const filter = this.termFilter.toLowerCase();
+          return this.allTerms.filter(term => 
+            term.toLowerCase().includes(filter)
+          );
+        },
+        
+        // Methods
+        async fetchAllTerms() {
+          this.loading = true;
+          this.error = null;
+          
+          try {
+            const response = await fetch(`${this.apiBase}/terms`);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            // Handle different response formats
+            if (Array.isArray(data)) {
+              this.allTerms = data;
+            } else if (data.terms && Array.isArray(data.terms)) {
+              this.allTerms = data.terms;
+            } else {
+              this.allTerms = Object.keys(data);
+            }
+            
+            console.log('Fetched terms:', this.allTerms.length);
+          } catch (err) {
+            this.error = `載入失敗: ${err.message}`;
+            console.error('Error:', err);
+          } finally {
+            this.loading = false;
+          }
+        },
+        
+        async lookupTerm(term) {
+          if (!term || !term.trim()) return;
+          
+          this.activeTab = 'lookup';
+          this.lookupTermInput = term;
+          this.loading = true;
+          this.error = null;
+          this.lookupResult = null;
+          
+          try {
+            const encodedTerm = encodeURIComponent(term.trim());
+            const response = await fetch(`${this.apiBase}/terms/${encodedTerm}`);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            this.lookupResult = data;
+            
+            console.log('Lookup result:', data);
+          } catch (err) {
+            this.error = `查詢失敗: ${err.message}`;
+            console.error('Error:', err);
+          } finally {
+            this.loading = false;
+          }
+        },
+        
+        async searchQuery(query) {
+          if (!query || !query.trim()) return;
+          
+          this.loading = true;
+          this.error = null;
+          this.queryResult = null;
+          
+          try {
+            const encodedQuery = encodeURIComponent(query.trim());
+            const response = await fetch(`${this.apiBase}/query/${encodedQuery}/studies`);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            this.queryResult = data;
+            
+            console.log('Query result:', data);
+          } catch (err) {
+            this.error = `搜尋失敗: ${err.message}`;
+            console.error('Error:', err);
+          } finally {
+            this.loading = false;
+          }
+        },
+        
+        // Initialize
+        init() {
+          console.log('Neurosynth Explorer initialized');
+          // Auto-fetch terms on load
+          this.fetchAllTerms();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
