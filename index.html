@@ -48,6 +48,22 @@
     .slide-in {
       animation: slideIn 0.3s ease-out;
     }
+    
+    /* Loading Skeleton Animation */
+    @keyframes shimmer {
+      0% {
+        background-position: -1000px 0;
+      }
+      100% {
+        background-position: 1000px 0;
+      }
+    }
+    
+    .skeleton {
+      animation: shimmer 2s infinite linear;
+      background: linear-gradient(to right, #f0f0f0 4%, #e0e0e0 25%, #f0f0f0 36%);
+      background-size: 1000px 100%;
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen" x-data="neurosynthApp()">
@@ -127,6 +143,7 @@
             <input 
               type="text" 
               x-model="termFilter"
+              @input="currentPage = 1"
               placeholder="🔍 搜尋 term..."
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
           </div>
@@ -137,13 +154,43 @@
             <span x-text="error"></span>
           </div>
           
-          <div x-show="allTerms.length > 0" class="space-y-2">
-            <p class="text-gray-600 mb-2">
-              找到 <span class="font-bold text-purple-600" x-text="filteredTerms.length"></span> 個 terms
-            </p>
+          <!-- Loading Skeleton -->
+          <div x-show="loading" class="space-y-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <template x-for="i in 12" :key="i">
+                <div class="skeleton h-16 rounded-lg"></div>
+              </template>
+            </div>
+          </div>
+          
+          <!-- Terms List with Pagination -->
+          <div x-show="!loading && allTerms.length > 0" class="space-y-4">
+            <!-- Stats -->
+            <div class="flex items-center justify-between text-sm text-gray-600">
+              <p>
+                顯示第 <span class="font-bold text-purple-600" x-text="(currentPage - 1) * itemsPerPage + 1"></span> 
+                到 <span class="font-bold text-purple-600" x-text="Math.min(currentPage * itemsPerPage, filteredTerms.length)"></span> 
+                筆，共 <span class="font-bold text-purple-600" x-text="filteredTerms.length"></span> 個 terms
+              </p>
+              
+              <!-- Items per page selector -->
+              <div class="flex items-center space-x-2">
+                <label>每頁顯示:</label>
+                <select 
+                  x-model.number="itemsPerPage"
+                  @change="currentPage = 1"
+                  class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-purple-600">
+                  <option value="12">12</option>
+                  <option value="24">24</option>
+                  <option value="48">48</option>
+                  <option value="96">96</option>
+                </select>
+              </div>
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-              <template x-for="term in filteredTerms" :key="term">
+            <!-- Terms Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <template x-for="term in paginatedTerms" :key="term">
                 <button
                   @click="lookupTerm(term)"
                   class="text-left px-4 py-3 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg transition-all duration-200 card-hover">
@@ -151,6 +198,69 @@
                   <span class="text-gray-800 font-medium" x-text="term"></span>
                 </button>
               </template>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div class="flex items-center justify-center space-x-2 pt-4" x-show="totalPages > 1">
+              <!-- First Page -->
+              <button
+                @click="currentPage = 1"
+                :disabled="currentPage === 1"
+                class="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-angle-double-left"></i>
+              </button>
+              
+              <!-- Previous Page -->
+              <button
+                @click="currentPage--"
+                :disabled="currentPage === 1"
+                class="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-angle-left"></i>
+              </button>
+              
+              <!-- Page Numbers -->
+              <template x-for="page in pageNumbers" :key="page">
+                <button
+                  @click="currentPage = page"
+                  :class="currentPage === page ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-100'"
+                  class="px-4 py-2 rounded-lg border border-gray-300 transition-colors font-medium"
+                  x-text="page">
+                </button>
+              </template>
+              
+              <!-- Next Page -->
+              <button
+                @click="currentPage++"
+                :disabled="currentPage === totalPages"
+                class="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-angle-right"></i>
+              </button>
+              
+              <!-- Last Page -->
+              <button
+                @click="currentPage = totalPages"
+                :disabled="currentPage === totalPages"
+                class="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-angle-double-right"></i>
+              </button>
+            </div>
+            
+            <!-- Quick Jump -->
+            <div class="flex items-center justify-center space-x-2 text-sm" x-show="totalPages > 1">
+              <span class="text-gray-600">跳到第</span>
+              <input 
+                type="number" 
+                x-model.number="jumpToPage"
+                @keyup.enter="goToPage()"
+                min="1"
+                :max="totalPages"
+                class="w-16 px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-purple-600">
+              <span class="text-gray-600">頁</span>
+              <button
+                @click="goToPage()"
+                class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                前往
+              </button>
             </div>
           </div>
           
@@ -192,7 +302,13 @@
             <span x-text="error"></span>
           </div>
           
-          <div x-show="lookupResult" class="space-y-4">
+          <!-- Loading Skeleton for Lookup -->
+          <div x-show="loading && activeTab === 'lookup'" class="space-y-3">
+            <div class="skeleton h-8 w-48 rounded"></div>
+            <div class="skeleton h-64 rounded-lg"></div>
+          </div>
+          
+          <div x-show="lookupResult && !loading" class="space-y-4">
             <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <h3 class="font-bold text-lg text-purple-800 mb-2">查詢結果</h3>
               <pre class="bg-white p-4 rounded border border-purple-200 overflow-x-auto text-sm" x-text="JSON.stringify(lookupResult, null, 2)"></pre>
@@ -212,9 +328,9 @@
           <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <h4 class="font-bold text-blue-800 mb-2">💡 查詢語法說明</h4>
             <ul class="text-sm text-blue-700 space-y-1">
-              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not, or, and</code> 來排除 term</li>
-              <li>• eg: <code class="bg-white px-2 py-0.5 rounded">amygdala not emotion</code></li>
-              <li>• eg: <code class="bg-white px-2 py-0.5 rounded">memory and hippocampus</code></li>
+              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not</code> 來排除 term</li>
+              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala not emotion</code></li>
+              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">memory not hippocampus</code></li>
             </ul>
           </div>
           
@@ -241,7 +357,13 @@
             <span x-text="error"></span>
           </div>
           
-          <div x-show="queryResult" class="space-y-4">
+          <!-- Loading Skeleton for Query -->
+          <div x-show="loading && activeTab === 'query'" class="space-y-3">
+            <div class="skeleton h-8 w-64 rounded"></div>
+            <div class="skeleton h-96 rounded-lg"></div>
+          </div>
+          
+          <div x-show="queryResult && !loading" class="space-y-4">
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
               <h3 class="font-bold text-lg text-green-800 mb-2">搜尋結果</h3>
               <p class="text-sm text-gray-600 mb-2">
@@ -264,7 +386,7 @@
         Built with Tailwind CSS + Alpine.js | Data from Neurosynth API
       </p>
       <p class="text-gray-500 text-sm mt-2">
-        NTU | 2025
+        NTU Psychology Lab | 2025
       </p>
     </div>
   </footer>
@@ -289,13 +411,65 @@
         queryInput: '',
         queryResult: null,
         
-        // Computed
+        // Pagination
+        currentPage: 1,
+        itemsPerPage: 24,
+        jumpToPage: 1,
+        
+        // Computed - Filtered Terms
         get filteredTerms() {
           if (!this.termFilter) return this.allTerms;
           const filter = this.termFilter.toLowerCase();
           return this.allTerms.filter(term => 
             term.toLowerCase().includes(filter)
           );
+        },
+        
+        // Computed - Total Pages
+        get totalPages() {
+          return Math.ceil(this.filteredTerms.length / this.itemsPerPage);
+        },
+        
+        // Computed - Paginated Terms
+        get paginatedTerms() {
+          const start = (this.currentPage - 1) * this.itemsPerPage;
+          const end = start + this.itemsPerPage;
+          return this.filteredTerms.slice(start, end);
+        },
+        
+        // Computed - Page Numbers to Display
+        get pageNumbers() {
+          const pages = [];
+          const total = this.totalPages;
+          const current = this.currentPage;
+          
+          if (total <= 7) {
+            // Show all pages if 7 or fewer
+            for (let i = 1; i <= total; i++) {
+              pages.push(i);
+            }
+          } else {
+            // Always show first page
+            pages.push(1);
+            
+            if (current > 3) {
+              pages.push('...');
+            }
+            
+            // Show pages around current page
+            for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+              pages.push(i);
+            }
+            
+            if (current < total - 2) {
+              pages.push('...');
+            }
+            
+            // Always show last page
+            pages.push(total);
+          }
+          
+          return pages;
         },
         
         // Methods
@@ -320,6 +494,9 @@
             } else {
               this.allTerms = Object.keys(data);
             }
+            
+            // Reset to first page
+            this.currentPage = 1;
             
             console.log('Fetched terms:', this.allTerms.length);
           } catch (err) {
@@ -383,6 +560,12 @@
             console.error('Error:', err);
           } finally {
             this.loading = false;
+          }
+        },
+        
+        goToPage() {
+          if (this.jumpToPage >= 1 && this.jumpToPage <= this.totalPages) {
+            this.currentPage = this.jumpToPage;
           }
         },
         
