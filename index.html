@@ -134,13 +134,13 @@
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-              <i class="fas fa-database mr-2 text-purple-600"></i>
+              <i class="fas fa-database mr-2 text-yellow-600"></i>
               所有可用的 Terms
             </h2>
             <button 
               @click="fetchAllTerms()" 
               :disabled="loading"
-              class="bg-amber-600 hover:bg-amber-400 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+              class="bg-slate-500 hover:bg-slate-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
               <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-sync'"></i>
               <span x-text="loading ? '載入中...' : '重新載入'"></span>
             </button>
@@ -176,9 +176,9 @@
             <!-- Stats -->
             <div class="flex items-center justify-between text-sm text-gray-600">
               <p>
-                顯示第 <span class="font-bold text-purple-600" x-text="(currentPage - 1) * itemsPerPage + 1"></span> 
-                到 <span class="font-bold text-purple-600" x-text="Math.min(currentPage * itemsPerPage, filteredTerms.length)"></span> 
-                筆，共 <span class="font-bold text-purple-600" x-text="filteredTerms.length"></span> 個 terms
+                顯示第 <span class="font-bold text-yellow-600" x-text="(currentPage - 1) * itemsPerPage + 1"></span> 
+                到 <span class="font-bold text-yellow-600" x-text="Math.min(currentPage * itemsPerPage, filteredTerms.length)"></span> 
+                筆，共 <span class="font-bold text-yellow-600" x-text="filteredTerms.length"></span> 個 terms
               </p>
               
               <!-- Items per page selector -->
@@ -247,7 +247,7 @@
       <div x-show="activeTab === 'lookup'" x-cloak class="slide-in">
         <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <i class="fas fa-search mr-2 text-purple-600"></i>
+            <i class="fas fa-search mr-2 text-yellow-600"></i>
             查詢特定 Term
           </h2>
           
@@ -420,16 +420,15 @@
       <div x-show="activeTab === 'query'" x-cloak class="slide-in">
         <div class="bg-white rounded-lg shadow-md p-6">
           <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <i class="fas fa-project-diagram mr-2 text-purple-600"></i>
+            <i class="fas fa-project-diagram mr-2 text-yellow-600"></i>
             邏輯搜尋 Studies
           </h2>
           
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h4 class="font-bold text-blue-800 mb-2">💡 查詢語法說明</h4>
-            <ul class="text-sm text-blue-700 space-y-1">
-              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not</code> 來排除 term</li>
+          <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+            <h4 class="font-bold text-slate-800 mb-2">💡 查詢語法說明</h4>
+            <ul class="text-sm text-slate-700 space-y-1">
+              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not, or, and</code> 來篩選 term</li>
               <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala not emotion</code></li>
-              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">memory not hippocampus</code></li>
             </ul>
           </div>
           
