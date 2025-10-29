@@ -424,29 +424,106 @@
             邏輯搜尋 Studies
           </h2>
           
+          <!-- Query Builder -->
+          <div class="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-6">
+            <h3 class="font-bold text-slate-800 mb-4 flex items-center">
+              <i class="fas fa-cubes mr-2"></i>
+              查詢條件建構器
+            </h3>
+            
+            <!-- Query Conditions -->
+            <div class="space-y-3 mb-4">
+              <template x-for="(condition, index) in queryConditions" :key="index">
+                <div class="flex items-center space-x-2">
+                  <!-- Operator (for subsequent conditions) -->
+                  <select x-show="index > 0" x-model="condition.operator" class="border border-gray-300 rounded px-3 py-2 text-sm font-medium w-24">
+                    <option value="and">AND</option>
+                    <option value="or">OR</option>
+                  </select>
+                  
+                  <!-- NOT checkbox -->
+                  <label class="flex items-center space-x-1 cursor-pointer">
+                    <input type="checkbox" x-model="condition.not" class="rounded">
+                    <span class="text-sm font-medium" :class="condition.not ? 'text-red-600' : 'text-gray-600'">NOT</span>
+                  </label>
+                  
+                  <!-- Term input -->
+                  <input 
+                    type="text" 
+                    x-model="condition.term" 
+                    placeholder="輸入 term..."
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600">
+                  
+                  <!-- Remove button -->
+                  <button 
+                    @click="removeCondition(index)" 
+                    :disabled="queryConditions.length === 1"
+                    class="px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-lg transition-colors">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </template>
+            </div>
+            
+            <!-- Add Condition Button -->
+            <button 
+              @click="addCondition()"
+              class="w-full py-2 border-2 border-dashed border-gray-300 hover:border-purple-400 text-gray-600 hover:text-purple-600 rounded-lg transition-colors flex items-center justify-center space-x-2">
+              <i class="fas fa-plus"></i>
+              <span>新增條件</span>
+            </button>
+            
+            <!-- Generated Query Preview -->
+            <div class="mt-4 p-4 bg-white border border-gray-300 rounded-lg">
+              <p class="text-xs text-gray-500 mb-1">查詢語句預覽:</p>
+              <code class="text-sm font-mono text-purple-700" x-text="generatedQuery || '(空白查詢)'"></code>
+            </div>
+          </div>
+          
+          <!-- Manual Input Option -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 class="font-bold text-blue-800 mb-2 flex items-center">
+              <i class="fas fa-keyboard mr-2"></i>
+              手動輸入查詢
+            </h4>
+            <div class="flex space-x-2">
+              <input 
+                type="text" 
+                x-model="queryInput"
+                @keyup.enter="searchQuery(queryInput)"
+                placeholder="或直接輸入查詢語句 (例如: amygdala and memory not emotion)"
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600">
+              
+              <button 
+                @click="searchQuery(queryInput)"
+                :disabled="loading || !queryInput"
+                class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+                <span>搜尋</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Search Button for Builder -->
+          <div class="flex justify-center mb-6">
+            <button 
+              @click="searchQuery(generatedQuery)"
+              :disabled="loading || !generatedQuery"
+              class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2 text-lg font-semibold shadow-lg">
+              <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+              <span>執行查詢</span>
+            </button>
+          </div>
+          
+          <!-- Syntax Help -->
           <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
             <h4 class="font-bold text-slate-800 mb-2">💡 查詢語法說明</h4>
             <ul class="text-sm text-slate-700 space-y-1">
-              <li>• 使用 <code class="bg-white px-2 py-0.5 rounded">not, or, and</code> 來篩選 term</li>
-              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala not emotion</code></li>
+              <li>• <code class="bg-white px-2 py-0.5 rounded">and</code> - 兩個條件都必須符合</li>
+              <li>• <code class="bg-white px-2 py-0.5 rounded">or</code> - 任一條件符合即可</li>
+              <li>• <code class="bg-white px-2 py-0.5 rounded">not</code> - 排除特定條件</li>
+              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala and memory not emotion</code></li>
             </ul>
-          </div>
-          
-          <div class="flex space-x-2 mb-6">
-            <input 
-              type="text" 
-              x-model="queryInput"
-              @keyup.enter="searchQuery(queryInput)"
-              placeholder="輸入查詢語句 (例如: amygdala not emotion)"
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent">
-            
-            <button 
-              @click="searchQuery(queryInput)"
-              :disabled="loading || !queryInput"
-              class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
-              <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
-              <span>搜尋</span>
-            </button>
           </div>
           
           <!-- Results -->
@@ -467,7 +544,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <h3 class="font-bold text-lg text-green-800 mb-1">搜尋結果</h3>
-                  <p class="text-sm text-gray-600">查詢: <code class="bg-white px-2 py-1 rounded" x-text="queryInput"></code></p>
+                  <p class="text-sm text-gray-600">查詢: <code class="bg-white px-2 py-1 rounded" x-text="lastSearchedQuery"></code></p>
                 </div>
                 <div class="text-right">
                   <p class="text-3xl font-bold text-green-600" x-text="queryResult?.count || 0"></p>
@@ -612,6 +689,12 @@
         queryResult: null,
         showRawJSON: false,
         showLookupJSON: false,
+        lastSearchedQuery: '',
+        
+        // Query Builder
+        queryConditions: [
+          { operator: 'and', term: '', not: false }
+        ],
         
         // Pagination for Terms List
         currentPage: 1,
@@ -626,6 +709,28 @@
         // Pagination for Query
         queryCurrentPage: 1,
         queryItemsPerPage: 25,
+        
+        // Computed - Generated Query
+        get generatedQuery() {
+          if (!this.queryConditions || this.queryConditions.length === 0) return '';
+          
+          let query = '';
+          this.queryConditions.forEach((condition, index) => {
+            if (!condition.term.trim()) return;
+            
+            if (index > 0) {
+              query += ' ' + condition.operator + ' ';
+            }
+            
+            if (condition.not) {
+              query += 'not ';
+            }
+            
+            query += condition.term.trim();
+          });
+          
+          return query.trim();
+        },
         
         // Computed - Filtered Terms
         get filteredTerms() {
@@ -729,6 +834,21 @@
           return pages;
         },
         
+        // Methods - Query Builder
+        addCondition() {
+          this.queryConditions.push({
+            operator: 'and',
+            term: '',
+            not: false
+          });
+        },
+        
+        removeCondition(index) {
+          if (this.queryConditions.length > 1) {
+            this.queryConditions.splice(index, 1);
+          }
+        },
+        
         // Methods
         async fetchAllTerms() {
           this.loading = true;
@@ -798,6 +918,7 @@
           this.error = null;
           this.queryResult = null;
           this.queryCurrentPage = 1;
+          this.lastSearchedQuery = query;
           
           try {
             const encodedQuery = encodeURIComponent(query.trim());
@@ -892,7 +1013,7 @@
           const link = document.createElement('a');
           const url = URL.createObjectURL(blob);
           
-          const filename = `neurosynth_query_${this.queryInput.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+          const filename = `neurosynth_query_${this.lastSearchedQuery.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
           
           link.setAttribute('href', url);
           link.setAttribute('download', filename);
