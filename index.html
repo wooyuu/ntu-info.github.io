@@ -423,7 +423,15 @@
             <i class="fas fa-project-diagram mr-2 text-yellow-600"></i>
             邏輯搜尋 Studies
           </h2>
-          
+
+          <!-- Syntax Help -->
+          <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+            <h4 class="font-bold text-slate-800 mb-2">💡 查詢語法說明</h4>
+            <ul class="text-sm text-slate-700 space-y-1">
+              <li>• 可輸入條件：<code class="bg-white px-2 py-0.5 rounded">and</code>, <code class="bg-white px-2 py-0.5 rounded">or</code>, <code class="bg-white px-2 py-0.5 rounded">not</code>
+              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala and memory not emotion</code></li>
+            </ul>
+          </div>
           <!-- Query Builder -->
           <div class="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-6">
             <h3 class="font-bold text-slate-800 mb-4 flex items-center">
@@ -491,17 +499,6 @@
               <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
               <span>執行查詢</span>
             </button>
-          </div>
-          
-          <!-- Syntax Help -->
-          <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-            <h4 class="font-bold text-slate-800 mb-2">💡 查詢語法說明</h4>
-            <ul class="text-sm text-slate-700 space-y-1">
-              <li>• <code class="bg-white px-2 py-0.5 rounded">and</code> - 兩個條件都必須符合</li>
-              <li>• <code class="bg-white px-2 py-0.5 rounded">or</code> - 任一條件符合即可</li>
-              <li>• <code class="bg-white px-2 py-0.5 rounded">not</code> - 排除特定條件</li>
-              <li>• 範例: <code class="bg-white px-2 py-0.5 rounded">amygdala and memory not emotion</code></li>
-            </ul>
           </div>
           
           <!-- Results -->
