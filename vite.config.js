@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  base: '/',
-
+  base: '/ntu-info.github.io/',
+  
   plugins: [react()],
   resolve: {
     alias: {
